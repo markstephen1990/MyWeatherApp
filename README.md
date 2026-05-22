@@ -23,8 +23,7 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - FusedLocationProviderClient (GPS)
 
 ## Screenshots
-<img width="408" height="892" alt="image" src="https://github.com/user-attachments/assets/3e497d68-1a17-4582-be85-17a56a08ea4c" />
-
+<img width="593" height="1314" alt="image" src="https://github.com/user-attachments/assets/fae43d80-0475-4296-9b3f-f435cbe4ac8c" />
 
 ## Setup
 1. Clone the repo
