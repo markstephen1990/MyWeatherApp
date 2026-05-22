@@ -10,6 +10,8 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
 class MainActivity : AppCompatActivity() {
@@ -35,6 +37,13 @@ class MainActivity : AppCompatActivity() {
         val tvWindSpeed = findViewById<TextView>(R.id.tvWindSpeed)
         val tvError = findViewById<TextView>(R.id.tvError)
         val ivWeatherIcon = findViewById<ImageView>(R.id.ivWeatherIcon)
+        val rvForecast = findViewById<RecyclerView>(R.id.rvForecast)
+        val tvForecastTitle = findViewById<TextView>(R.id.tvForecastTitle)
+
+        // Setup RecyclerView
+        rvForecast.layoutManager = LinearLayoutManager(
+            this, LinearLayoutManager.HORIZONTAL, false
+        )
 
         // Search button click
         btnSearch.setOnClickListener {
@@ -43,6 +52,8 @@ class MainActivity : AppCompatActivity() {
                 tvError.text = "Please enter a city name."
                 tvError.visibility = View.VISIBLE
                 weatherCard.visibility = View.GONE
+                rvForecast.visibility = View.GONE
+                tvForecastTitle.visibility = View.GONE
             } else {
                 tvError.visibility = View.GONE
                 viewModel.getWeather(city, API_KEY)
@@ -72,11 +83,20 @@ class MainActivity : AppCompatActivity() {
             Glide.with(this).load(iconUrl).into(ivWeatherIcon)
         }
 
+        // Observe forecast data
+        viewModel.forecastData.observe(this) { forecastList ->
+            tvForecastTitle.visibility = View.VISIBLE
+            rvForecast.visibility = View.VISIBLE
+            rvForecast.adapter = ForecastAdapter(forecastList)
+        }
+
         // Observe error
         viewModel.errorMessage.observe(this) { error ->
             tvError.text = error
             tvError.visibility = View.VISIBLE
             weatherCard.visibility = View.GONE
+            rvForecast.visibility = View.GONE
+            tvForecastTitle.visibility = View.GONE
         }
     }
 }
