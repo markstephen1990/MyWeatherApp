@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import androidx.core.view.WindowCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -44,6 +45,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        // Fix edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(window, true)
 
         // Initialize location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
