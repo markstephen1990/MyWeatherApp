@@ -34,19 +34,3 @@
 
 # \- Coroutines
 
-# 
-
-# \## Screenshots
-
-# (add a screenshot of your app here)
-
-# 
-
-# \## Setup
-
-# 1\. Clone the repo
-
-# 2\. Get a free API key from openweathermap.org
-
-# 3\. Add
-
