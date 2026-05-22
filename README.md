@@ -8,9 +8,11 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - 🌡️ Displays temperature, humidity, and wind speed
 - 🌤️ Weather condition icons
 - 📅 5-day weather forecast
+- 🕐 Search history with delete and clear all
 - ❌ Error handling for invalid cities
 - ⏳ Loading spinner while fetching data
 - 🌙 Clean dark UI
+- 📱 Scrollable layout that fits all screen sizes
 
 ## Tech Stack
 - Kotlin
@@ -21,6 +23,8 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - Coroutines
 - LiveData & ViewModel
 - FusedLocationProviderClient (GPS)
+- SharedPreferences (search history)
+- RecyclerView
 
 ## Screenshots
 <img width="593" height="1314" alt="image" src="https://github.com/user-attachments/assets/fae43d80-0475-4296-9b3f-f435cbe4ac8c" />
