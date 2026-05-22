@@ -2,6 +2,7 @@ package com.ferngames.myweatherapp
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+
 class WeatherRepository {
 
     private val api: WeatherApiService
@@ -19,7 +20,23 @@ class WeatherRepository {
         return api.getWeather(city, apiKey)
     }
 
+    suspend fun getWeatherByLocation(
+        latitude: Double,
+        longitude: Double,
+        apiKey: String
+    ): WeatherResponse {
+        return api.getWeatherByLocation(latitude, longitude, apiKey)
+    }
+
     suspend fun getForecast(city: String, apiKey: String): ForecastResponse {
         return api.getForecast(city, apiKey)
+    }
+
+    suspend fun getForecastByLocation(
+        latitude: Double,
+        longitude: Double,
+        apiKey: String
+    ): ForecastResponse {
+        return api.getForecastByLocation(latitude, longitude, apiKey)
     }
 }

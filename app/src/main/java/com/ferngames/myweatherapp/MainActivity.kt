@@ -1,5 +1,7 @@
 package com.ferngames.myweatherapp
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -8,26 +10,48 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: WeatherViewModel by viewModels()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     // Replace with your actual OpenWeatherMap API key
     private val API_KEY = "c3054f23d5bba56f9c0f5e15a51abd05"
+
+    // Permission launcher
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            fetchLocation()
+        } else {
+            showError("Location permission denied. Please enable it in settings.")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Initialize location client
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
         // Views
         val etCityName = findViewById<EditText>(R.id.etCityName)
         val btnSearch = findViewById<Button>(R.id.btnSearch)
+        val btnLocation = findViewById<Button>(R.id.btnLocation)
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         val weatherCard = findViewById<LinearLayout>(R.id.weatherCard)
         val tvCityName = findViewById<TextView>(R.id.tvCityName)
@@ -49,8 +73,7 @@ class MainActivity : AppCompatActivity() {
         btnSearch.setOnClickListener {
             val city = etCityName.text.toString().trim()
             if (city.isEmpty()) {
-                tvError.text = "Please enter a city name."
-                tvError.visibility = View.VISIBLE
+                showError("Please enter a city name.")
                 weatherCard.visibility = View.GONE
                 rvForecast.visibility = View.GONE
                 tvForecastTitle.visibility = View.GONE
@@ -58,6 +81,11 @@ class MainActivity : AppCompatActivity() {
                 tvError.visibility = View.GONE
                 viewModel.getWeather(city, API_KEY)
             }
+        }
+
+        // Location button click
+        btnLocation.setOnClickListener {
+            checkLocationPermission()
         }
 
         // Observe loading state
@@ -77,7 +105,6 @@ class MainActivity : AppCompatActivity() {
             tvHumidity.text = "${weather.main.humidity}%"
             tvWindSpeed.text = "${weather.wind.speed} m/s"
 
-            // Load weather icon
             val iconCode = weather.weather[0].icon
             val iconUrl = "https://openweathermap.org/img/wn/${iconCode}@2x.png"
             Glide.with(this).load(iconUrl).into(ivWeatherIcon)
@@ -92,11 +119,53 @@ class MainActivity : AppCompatActivity() {
 
         // Observe error
         viewModel.errorMessage.observe(this) { error ->
-            tvError.text = error
-            tvError.visibility = View.VISIBLE
+            showError(error)
             weatherCard.visibility = View.GONE
             rvForecast.visibility = View.GONE
             tvForecastTitle.visibility = View.GONE
         }
+    }
+
+    private fun checkLocationPermission() {
+        val fineLocation = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        val coarseLocation = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        if (fineLocation == PackageManager.PERMISSION_GRANTED ||
+            coarseLocation == PackageManager.PERMISSION_GRANTED) {
+            fetchLocation()
+        } else {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    @Suppress("MissingPermission")
+    private fun fetchLocation() {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                viewModel.getWeatherByLocation(
+                    location.latitude,
+                    location.longitude,
+                    API_KEY
+                )
+            } else {
+                showError("Unable to get location. Please try again.")
+            }
+        }.addOnFailureListener {
+            showError("Location error: ${it.message}")
+        }
+    }
+
+    private fun showError(message: String) {
+        val tvError = findViewById<TextView>(R.id.tvError)
+        tvError.text = message
+        tvError.visibility = View.VISIBLE
     }
 }

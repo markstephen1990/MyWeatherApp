@@ -26,21 +26,55 @@ class WeatherViewModel : ViewModel() {
         _isLoading.value = true
         viewModelScope.launch {
             try {
-                // Fetch both current weather and forecast at the same time
                 val weatherResult = repository.getWeather(city, apiKey)
                 val forecastResult = repository.getForecast(city, apiKey)
+                _weatherData.value = weatherResult
+
+                val dailyForecasts = forecastResult.list
+                    .groupBy { it.dt_txt.substring(0, 10) }
+                    .values
+                    .map { it.first() }
+                    .take(5)
+                _forecastData.value = dailyForecasts
+                _isLoading.value = false
+            } catch (e: Exception) {
+                _errorMessage.value = "City not found. Please try again."
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun getWeatherByLocation(
+        latitude: Double,
+        longitude: Double,
+        apiKey: String
+    ) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val weatherResult = repository.getWeatherByLocation(
+                    latitude, longitude, apiKey
+                )
+                val forecastResult = repository.getForecastByLocation(
+                    latitude, longitude, apiKey
+                )
 
                 _weatherData.value = weatherResult
 
-                // Filter to get one forecast per day (at 12:00:00)
-                val dailyForecasts = forecastResult.list.filter { item ->
-                    item.dt_txt.contains("12:00:00")
+                val dailyForecasts = forecastResult.list
+                    .groupBy { it.dt_txt.substring(0, 10) }
+                    .values
+                    .map { it.first() }
+                    .take(5)
+
+                dailyForecasts.forEach { item ->
+                    android.util.Log.d("FORECAST", "Date: ${item.dt_txt}, Temp: ${item.main.temp}")
                 }
                 _forecastData.value = dailyForecasts
 
                 _isLoading.value = false
             } catch (e: Exception) {
-                _errorMessage.value = "City not found. Please try again."
+                _errorMessage.value = "Unable to get location weather. Please try again."
                 _isLoading.value = false
             }
         }

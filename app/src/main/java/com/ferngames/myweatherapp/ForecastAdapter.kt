@@ -31,7 +31,7 @@ class ForecastAdapter(private val forecastList: List<ForecastItem>) :
 
         // Format date to show day name (e.g. "Mon", "Tue")
         val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val outputFormat = SimpleDateFormat("EEE", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("EEE\nMMM d", Locale.getDefault())
         val date = inputFormat.parse(item.dt_txt)
         holder.tvDay.text = date?.let { outputFormat.format(it) } ?: "N/A"
 
