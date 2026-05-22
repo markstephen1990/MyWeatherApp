@@ -15,7 +15,8 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - 🕐 Search history with delete and clear all
 - ❌ Error handling for invalid cities
 - ⏳ Loading spinner while fetching data
-- 🌙 Clean dark UI
+- 🌙 Dark/light mode toggle
+- 💫 Splash screen on launch
 - 📱 Scrollable layout that fits all screen sizes
 
 ## Tech Stack
@@ -27,8 +28,9 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - Coroutines
 - LiveData & ViewModel
 - FusedLocationProviderClient (GPS)
-- SharedPreferences (search history)
+- SharedPreferences (search history & settings)
 - RecyclerView
+- SplashScreen API
 
 ## Screenshots
 <img width="592" height="1308" alt="image" src="https://github.com/user-attachments/assets/c88efd6c-759e-43c4-bac6-db9a9496be00" />
