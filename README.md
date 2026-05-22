@@ -6,6 +6,10 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - 🔍 Search weather by city name
 - 📍 Get weather based on current GPS location
 - 🌡️ Displays temperature, humidity, and wind speed
+- 🌡️ Feels like temperature
+- 💧 Atmospheric pressure
+- 👁️ Visibility in km
+- 🌅 Sunrise and sunset times
 - 🌤️ Weather condition icons
 - 📅 5-day weather forecast
 - 🕐 Search history with delete and clear all
@@ -27,7 +31,7 @@ An Android weather app built with Kotlin that shows real-time weather data and a
 - RecyclerView
 
 ## Screenshots
-<img width="593" height="1314" alt="image" src="https://github.com/user-attachments/assets/fae43d80-0475-4296-9b3f-f435cbe4ac8c" />
+<img width="592" height="1308" alt="image" src="https://github.com/user-attachments/assets/c88efd6c-759e-43c4-bac6-db9a9496be00" />
 
 ## Setup
 1. Clone the repo
