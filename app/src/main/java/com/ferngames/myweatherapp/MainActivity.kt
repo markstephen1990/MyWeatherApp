@@ -1,8 +1,11 @@
 package com.ferngames.myweatherapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -12,24 +15,27 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import androidx.core.view.WindowCompat
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: WeatherViewModel by viewModels()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var historyManager: SearchHistoryManager
+    private lateinit var historyAdapter: SearchHistoryAdapter
 
-    // Replace with your actual OpenWeatherMap API key
     private val API_KEY = "c3054f23d5bba56f9c0f5e15a51abd05"
 
-    // Permission launcher
     private val locationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -38,18 +44,25 @@ class MainActivity : AppCompatActivity() {
         if (granted) {
             fetchLocation()
         } else {
-            showError("Location permission denied. Please enable it in settings.")
+            val permanentlyDenied = !shouldShowRequestPermissionRationale(
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+            if (permanentlyDenied) {
+                showSettingsDialog()
+            } else {
+                showError("Location permission denied. Please allow it to use this feature.")
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        // Fix edge-to-edge display
+
         WindowCompat.setDecorFitsSystemWindows(window, true)
 
-        // Initialize location client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        historyManager = SearchHistoryManager(this)
 
         // Views
         val etCityName = findViewById<EditText>(R.id.etCityName)
@@ -66,11 +79,46 @@ class MainActivity : AppCompatActivity() {
         val ivWeatherIcon = findViewById<ImageView>(R.id.ivWeatherIcon)
         val rvForecast = findViewById<RecyclerView>(R.id.rvForecast)
         val tvForecastTitle = findViewById<TextView>(R.id.tvForecastTitle)
+        val rvSearchHistory = findViewById<RecyclerView>(R.id.rvSearchHistory)
+        val historyContainer = findViewById<LinearLayout>(R.id.historyContainer)
+        val tvClearHistory = findViewById<TextView>(R.id.tvClearHistory)
 
-        // Setup RecyclerView
+        // Setup forecast RecyclerView
         rvForecast.layoutManager = LinearLayoutManager(
             this, LinearLayoutManager.HORIZONTAL, false
         )
+
+        // Setup history RecyclerView
+        historyAdapter = SearchHistoryAdapter(
+            historyManager.getHistory().toMutableList(),
+            onCityClick = { city ->
+                etCityName.setText(city)
+                tvError.visibility = View.GONE
+                viewModel.getWeather(city, API_KEY)
+            },
+            onDeleteClick = { city ->
+                val newHistory = historyManager.getHistory().toMutableList()
+                newHistory.remove(city)
+                historyManager.clearHistory()
+                newHistory.forEach { historyManager.saveCity(it) }
+                historyAdapter.updateList(newHistory)
+                if (newHistory.isEmpty()) historyContainer.visibility = View.GONE
+            }
+        )
+        rvSearchHistory.layoutManager = LinearLayoutManager(this)
+        rvSearchHistory.adapter = historyAdapter
+
+        // Show history if exists
+        if (historyManager.getHistory().isNotEmpty()) {
+            historyContainer.visibility = View.VISIBLE
+        }
+
+        // Clear all history
+        tvClearHistory.setOnClickListener {
+            historyManager.clearHistory()
+            historyAdapter.updateList(mutableListOf())
+            historyContainer.visibility = View.GONE
+        }
 
         // Search button click
         btnSearch.setOnClickListener {
@@ -111,6 +159,15 @@ class MainActivity : AppCompatActivity() {
             val iconCode = weather.weather[0].icon
             val iconUrl = "https://openweathermap.org/img/wn/${iconCode}@2x.png"
             Glide.with(this).load(iconUrl).into(ivWeatherIcon)
+
+            // Save to history
+            val city = etCityName.text.toString().trim()
+            if (city.isNotEmpty()) {
+                historyManager.saveCity(city)
+                val updatedHistory = historyManager.getHistory().toMutableList()
+                historyAdapter.updateList(updatedHistory)
+                historyContainer.visibility = View.VISIBLE
+            }
         }
 
         // Observe forecast data
@@ -140,18 +197,38 @@ class MainActivity : AppCompatActivity() {
             coarseLocation == PackageManager.PERMISSION_GRANTED) {
             fetchLocation()
         } else {
-            locationPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+            if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                AlertDialog.Builder(this)
+                    .setTitle("Location Permission Needed")
+                    .setMessage("This app needs location access to show your local weather.")
+                    .setPositiveButton("Allow") { _, _ ->
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            } else {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
                 )
-            )
+            }
         }
     }
 
     @Suppress("MissingPermission")
     private fun fetchLocation() {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+        val cancellationToken = CancellationTokenSource()
+        fusedLocationClient.getCurrentLocation(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            cancellationToken.token
+        ).addOnSuccessListener { location ->
             if (location != null) {
                 viewModel.getWeatherByLocation(
                     location.latitude,
@@ -159,11 +236,24 @@ class MainActivity : AppCompatActivity() {
                     API_KEY
                 )
             } else {
-                showError("Unable to get location. Please try again.")
+                showError("Unable to get location. Please enable GPS and try again.")
             }
         }.addOnFailureListener {
             showError("Location error: ${it.message}")
         }
+    }
+
+    private fun showSettingsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Location Permission Required")
+            .setMessage("Location permission was permanently denied. Please enable it in app settings.")
+            .setPositiveButton("Open Settings") { _, _ ->
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.fromParts("package", packageName, null)
+                startActivity(intent)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showError(message: String) {
