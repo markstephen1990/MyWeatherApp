@@ -61,6 +61,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Glide - for weather icons
     implementation("com.github.bumptech.glide:glide:4.16.0")

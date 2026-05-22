@@ -17,7 +17,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -56,6 +58,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -63,6 +66,33 @@ class MainActivity : AppCompatActivity() {
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         historyManager = SearchHistoryManager(this)
+
+        // Theme toggle setup
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        var isDarkMode = prefs.getBoolean("dark_mode", true)
+        val btnToggleTheme = findViewById<Button>(R.id.btnToggleTheme)
+
+        // Apply saved theme on startup
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            btnToggleTheme.text = getString(R.string.light_mode)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            btnToggleTheme.text = getString(R.string.dark_mode)
+        }
+
+        // Toggle button click
+        btnToggleTheme.setOnClickListener {
+            isDarkMode = !isDarkMode
+            prefs.edit().putBoolean("dark_mode", isDarkMode).apply()
+            if (isDarkMode) {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                btnToggleTheme.text = getString(R.string.light_mode)
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                btnToggleTheme.text = getString(R.string.dark_mode)
+            }
+        }
 
         // Views
         val etCityName = findViewById<EditText>(R.id.etCityName)
@@ -144,6 +174,13 @@ class MainActivity : AppCompatActivity() {
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
+        // New detail views
+        val tvFeelsLike = findViewById<TextView>(R.id.tvFeelsLike)
+        val tvPressure = findViewById<TextView>(R.id.tvPressure)
+        val tvVisibility = findViewById<TextView>(R.id.tvVisibility)
+        val tvSunrise = findViewById<TextView>(R.id.tvSunrise)
+        val tvSunset = findViewById<TextView>(R.id.tvSunset)
+
         // Observe weather data
         viewModel.weatherData.observe(this) { weather ->
             weatherCard.visibility = View.VISIBLE
@@ -155,6 +192,16 @@ class MainActivity : AppCompatActivity() {
                 .replaceFirstChar { it.uppercase() }
             tvHumidity.text = "${weather.main.humidity}%"
             tvWindSpeed.text = "${weather.wind.speed} m/s"
+
+            // New details
+            tvFeelsLike.text = "${weather.main.feels_like.toInt()}°C"
+            tvPressure.text = "${weather.main.pressure} hPa"
+            tvVisibility.text = "${weather.visibility / 1000} km"
+
+            // Format sunrise and sunset times
+            val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+            tvSunrise.text = sdf.format(java.util.Date(weather.sys.sunrise * 1000))
+            tvSunset.text = sdf.format(java.util.Date(weather.sys.sunset * 1000))
 
             val iconCode = weather.weather[0].icon
             val iconUrl = "https://openweathermap.org/img/wn/${iconCode}@2x.png"

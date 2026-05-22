@@ -1,9 +1,11 @@
 <resources>
-    <string name="app_name">Fern Weather App</string>
+    <string name="app_name">Fern Weather</string>
     <string name="search_hint">Enter city name...</string>
     <string name="search_button">Search</string>
     <string name="humidity_label">Humidity</string>
     <string name="wind_speed_label">Wind Speed</string>
     <string name="forecast_title">5-Day Forecast</string>
     <string name="location_button">📍 Use My Location</string>
+    <string name="dark_mode">🌙 Dark</string>
+    <string name="light_mode">☀️ Light</string>
 </resources>
