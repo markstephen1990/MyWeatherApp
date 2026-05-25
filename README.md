@@ -38,7 +38,7 @@ An Android weather app built with Kotlin that shows real-time weather data, deta
 - AppWidget (home screen widget)
 
 ## Screenshots
-<img width="593" height="1317" alt="image" src="https://github.com/user-attachments/assets/7b9ae168-3fa5-4fcf-849b-1a75cf05fd5b" />
+<img width="298" height="656" alt="image" src="https://github.com/user-attachments/assets/7b9ae168-3fa5-4fcf-849b-1a75cf05fd5b" />
 <img width="298" height="656" alt="image" src="https://github.com/user-attachments/assets/c5ade096-d5ad-4fb7-b0bc-3b7abc21a781" />
 
 
