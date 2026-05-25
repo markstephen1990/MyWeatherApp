@@ -28,6 +28,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import android.widget.ImageButton
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,6 +59,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply theme before UI loads
+        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
+        var isDarkMode = prefs.getBoolean("dark_mode", true)
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        }
+
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -68,18 +78,9 @@ class MainActivity : AppCompatActivity() {
         historyManager = SearchHistoryManager(this)
 
         // Theme toggle setup
-        val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        var isDarkMode = prefs.getBoolean("dark_mode", true)
         val btnToggleTheme = findViewById<Button>(R.id.btnToggleTheme)
-
-        // Apply saved theme on startup
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            btnToggleTheme.text = getString(R.string.light_mode)
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            btnToggleTheme.text = getString(R.string.dark_mode)
-        }
+        btnToggleTheme.text = if (isDarkMode) getString(R.string.light_mode)
+        else getString(R.string.dark_mode)
 
         // Toggle button click
         btnToggleTheme.setOnClickListener {
@@ -87,16 +88,16 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean("dark_mode", isDarkMode).apply()
             if (isDarkMode) {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                btnToggleTheme.text = getString(R.string.light_mode)
             } else {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                btnToggleTheme.text = getString(R.string.dark_mode)
             }
+            btnToggleTheme.text = if (isDarkMode) getString(R.string.light_mode)
+            else getString(R.string.dark_mode)
         }
 
         // Views
         val etCityName = findViewById<EditText>(R.id.etCityName)
-        val btnSearch = findViewById<Button>(R.id.btnSearch)
+        val btnSearch = findViewById<ImageButton>(R.id.btnSearch)
         val btnLocation = findViewById<Button>(R.id.btnLocation)
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         val weatherCard = findViewById<LinearLayout>(R.id.weatherCard)
@@ -112,6 +113,22 @@ class MainActivity : AppCompatActivity() {
         val rvSearchHistory = findViewById<RecyclerView>(R.id.rvSearchHistory)
         val historyContainer = findViewById<LinearLayout>(R.id.historyContainer)
         val tvClearHistory = findViewById<TextView>(R.id.tvClearHistory)
+        val swipeRefreshLayout = findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefreshLayout)
+
+        // Set refresh color to match app theme
+        swipeRefreshLayout.setColorSchemeColors(
+            android.graphics.Color.parseColor("#6C63FF")
+        )
+
+        // Pull to refresh
+        swipeRefreshLayout.setOnRefreshListener {
+            val city = etCityName.text.toString().trim()
+            if (city.isNotEmpty()) {
+                viewModel.getWeather(city, API_KEY)
+            } else {
+                swipeRefreshLayout.isRefreshing = false
+            }
+        }
 
         // Setup forecast RecyclerView
         rvForecast.layoutManager = LinearLayoutManager(
@@ -169,9 +186,13 @@ class MainActivity : AppCompatActivity() {
             checkLocationPermission()
         }
 
+        // Auto fetch location on app open
+        checkLocationPermission()
+
         // Observe loading state
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            if (!isLoading) swipeRefreshLayout.isRefreshing = false
         }
 
         // New detail views
@@ -215,6 +236,14 @@ class MainActivity : AppCompatActivity() {
                 historyAdapter.updateList(updatedHistory)
                 historyContainer.visibility = View.VISIBLE
             }
+
+            // Update widget
+            WeatherWidget.saveWeatherData(
+                this,
+                weather.name,
+                "${weather.main.temp.toInt()}°C",
+                weather.weather[0].description.replaceFirstChar { it.uppercase() }
+            )
         }
 
         // Observe forecast data
